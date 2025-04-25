@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistema de Gerenciamento de Fila</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Poppins", sans-serif;
+        background: linear-gradient(135deg, #f5f7fa 0%, #e4ecfb 100%);
+      }
+
+      .animate-pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.7;
+        }
+      }
+
+      .card {
+        transition: all 0.3s ease;
+      }
+
+      .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #4f6ef7 0%, #3b5fe2 100%);
+        transition: all 0.3s ease;
+      }
+
+      .btn-primary:hover:not(:disabled) {
+        background: linear-gradient(135deg, #3b5fe2 0%, #2a4cd0 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(59, 95, 226, 0.25);
+      }
+
+      .btn-success {
+        background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        transition: all 0.3s ease;
+      }
+
+      .btn-success:hover {
+        background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(56, 161, 105, 0.25);
+      }
+
+      .patient-card {
+        transition: all 0.3s ease;
+      }
+
+      .header-wave {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        overflow: hidden;
+        line-height: 0;
+        z-index: -1;
+      }
+
+      .header-wave svg {
+        position: relative;
+        display: block;
+        width: calc(100% + 1.3px);
+        height: 150px;
+      }
+
+      .header-wave .shape-fill {
+        fill: #3b82f6;
+        opacity: 0.1;
+      }
+
+      /* Custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: #c5d3f1;
+        border-radius: 10px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: #a3b9e8;
+      }
+
+      .queue-number {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        line-height: 24px;
+        text-align: center;
+        border-radius: 50%;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen py-8">
+    <div class="header-wave">
+      <svg
+        data-name="Layer 1"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 1200 120"
+        preserveAspectRatio="none"
+      >
+        <path
+          d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z"
+          class="shape-fill"
+        ></path>
+      </svg>
+    </div>
+
+    <div class="max-w-5xl mx-auto px-4">
+      <header class="text-center mb-10">
+        <div class="inline-block mb-2 text-blue-600">
+          <i class="fas fa-user-nurse text-4xl"></i>
+        </div>
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">
+          Sistema de Gerenciamento de Fila
+        </h1>
+        <p class="text-gray-500">
+          Organize o atendimento de pacientes com eficiência
+        </p>
+      </header>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="md:col-span-2">
+          <div class="bg-white rounded-xl shadow-lg p-6 mb-6 card">
+            <div class="flex items-center mb-4">
+              <div class="bg-blue-100 rounded-full p-2 mr-3">
+                <i class="fas fa-user-check text-blue-600"></i>
+              </div>
+              <h2 class="text-xl font-semibold text-gray-800">
+                Paciente Atual
+              </h2>
+            </div>
+            <div id="current-patient-container" class="mt-2">
+              <p class="text-gray-500 italic flex items-center">
+                <i class="fas fa-info-circle mr-2"></i>
+                Nenhum paciente sendo atendido
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="bg-white rounded-xl shadow-lg p-6 card">
+            <div class="flex items-center mb-4">
+              <div class="bg-green-100 rounded-full p-2 mr-3">
+                <i class="fas fa-chart-pie text-green-600"></i>
+              </div>
+              <h2 class="text-xl font-semibold text-gray-800">Estatísticas</h2>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="bg-blue-50 rounded-lg p-4 text-center">
+                <p class="text-sm text-blue-600 mb-1">Na Fila</p>
+                <div class="flex items-center justify-center">
+                  <i class="fas fa-users text-blue-500 mr-2"></i>
+                  <span
+                    id="queue-count"
+                    class="text-2xl font-bold text-blue-700"
+                    >0</span
+                  >
+                </div>
+              </div>
+              <div class="bg-green-50 rounded-lg p-4 text-center">
+                <p class="text-sm text-green-600 mb-1">Atendidos</p>
+                <div class="flex items-center justify-center">
+                  <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                  <span
+                    id="attended-count"
+                    class="text-2xl font-bold text-green-700"
+                    >0</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <div class="bg-white rounded-xl shadow-lg p-6 card mb-6">
+            <div class="flex items-center mb-4">
+              <div class="bg-green-100 rounded-full p-2 mr-3">
+                <i class="fas fa-plus text-green-600"></i>
+              </div>
+              <h2 class="text-xl font-semibold text-gray-800">
+                Adicionar Paciente
+              </h2>
+            </div>
+            <div class="flex flex-col gap-3">
+              <div class="relative">
+                <i class="fas fa-user absolute left-3 top-3 text-gray-400"></i>
+                <input
+                  type="text"
+                  id="patient-name"
+                  placeholder="Nome do paciente"
+                  class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <button
+                id="add-patient"
+                class="btn-success text-white px-4 py-3 rounded-lg flex items-center justify-center"
+              >
+                <i class="fas fa-plus-circle mr-2"></i>
+                Adicionar à Fila
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-lg p-6 card">
+            <div class="flex items-center mb-4">
+              <div class="bg-blue-100 rounded-full p-2 mr-3">
+                <i class="fas fa-cogs text-blue-600"></i>
+              </div>
+              <h2 class="text-xl font-semibold text-gray-800">Controles</h2>
+            </div>
+            <button
+              id="call-next"
+              class="w-full btn-primary disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-4 py-3 rounded-lg transition-colors flex items-center justify-center"
+            >
+              <i class="fas fa-bullhorn mr-2"></i>
+              Chamar Próximo Paciente
+            </button>
+          </div>
+        </div>
+
+        <div class="md:col-span-2">
+          <div class="bg-white rounded-xl shadow-lg p-6 card">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center">
+                <div class="bg-blue-100 rounded-full p-2 mr-3">
+                  <i class="fas fa-clipboard-list text-blue-600"></i>
+                </div>
+                <h2 class="text-xl font-semibold text-gray-800">
+                  Fila de Espera
+                </h2>
+              </div>
+              <span class="text-sm text-gray-500">Ordem de chegada</span>
+            </div>
+            <div id="queue-container" class="max-h-96 overflow-y-auto pr-1">
+              <div
+                class="flex items-center justify-center text-gray-500 italic py-8"
+              >
+                <i class="fas fa-inbox text-gray-300 text-4xl mr-3"></i>
+                <p>Fila vazia</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        id="history-section"
+        class="bg-white rounded-xl shadow-lg p-6 mt-6 hidden card"
+      >
+        <div class="flex items-center mb-4">
+          <div class="bg-purple-100 rounded-full p-2 mr-3">
+            <i class="fas fa-history text-purple-600"></i>
+          </div>
+          <h2 class="text-xl font-semibold text-gray-800">
+            Histórico de Atendimentos
+          </h2>
+        </div>
+        <div class="max-h-40 overflow-y-auto pr-1">
+          <ul id="history-list" class="space-y-1"></ul>
+        </div>
+      </div>
+
+      <footer class="mt-10 text-center text-gray-500 text-sm">
+        <p>&copy; 2025 Sistema de Gerenciamento de Fila</p>
+      </footer>
+    </div>
+    <script src="js/script.js"></script>
+  </body>
+</html>
